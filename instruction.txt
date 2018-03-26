@@ -16,7 +16,7 @@ Part 1: Set environment for Docker for MAC
     --------------------------------------------------
 
 5. Forward Port from MAC to specific pods:
-    kubectl port-forward <pods name from no.4> 8443:8443 --namespace=kube-system
+    kubectl port-forward <pods name from no.4> 8443:8443 --namespace=kube-system ==> *This not recommend for product* (For Debug Only)
 
 6. Open web browser and check dashboard url: http://127.0.0.1:8443
 
@@ -29,7 +29,7 @@ Part 1: Set environment for Docker for MAC
 Part 2: Create Web Demo for Test
 ====================================================
 1. Create Namespace by command:
-	kubectl create -f webtest_deploy_hpa.yml (In case github: kubectl create -f https://raw.githubusercontent.com/praparn/docker_meetup_20180329/master/webtest_deploy_hpa.yml)
+	kubectl create -f https://raw.githubusercontent.com/praparn/docker_meetup_20180329/master/webtest_deploy_hpa.yml
 	 
 2. Check Pods status by command:
 	kubectl get deployment/webtest -o wide
@@ -39,96 +39,68 @@ Part 2: Create Web Demo for Test
 	http://127.0.0.1:32500
 
 
+====================================================
+Part 3: Create HPA
+====================================================
+1. Create HPA (Horizantal Pods autoscale) with cpu target 10% by command:
+	kubectl autoscale deployment/webtest --min=1 --max=10 --cpu-percent=10 
+	 
+2. Check HPA status by command:
+	kubectl get hpa
+	kubectl describe hpa/webtest
 
-1. Access to current path and create pods/service by command
-    kubectl create -f webtest_pod.yml
-    kubectl create -f webtest_svc.yml
+3. Check Dashboard for HPA Operate:
+	http://127.0.0.1:32500
 
-2. Check service avaliable and pods by command
-    kubectl get pods
-    kubectl get svc     ==> Check Port Result
-    ---------------------------------------------------
-	Example: Port mapping outside on TCP:32140
-	---------------------------------------------------
-    NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
-    kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP          1h
-    webtest      NodePort    10.99.118.45   <none>        5000:32140/TCP   6s
-	---------------------------------------------------
-
-
-3. Open web browser and check pods url: http://127.0.0.1:xxxx ==> Port from No.2
-
-4. Check and assessment for pods "webtest" by command:
-    kubectl exec -it webtest -c webtest sh
-    more mainlite.py
-    exit
-    kubectl get pods
-    kubectl get svc
-
-(open new tab)
-5. Create container by native docker command:
-    docker container run -dt --name webtest -p 5000:5000 labdocker/cluster:webservicelite
-    docker container ps |grep labdocker/cluster:webservicelite
-
-6. Open web browser and chek result by url: http://127.0.0.1:5000
-
-7. Clean Up lab by command:
-
-    # For Kubernetes
-    kubectl delete -f webtest_svc.yml
-    kubectl delete -f webtest_pod.yml
-
-    # For Docker Native
-    docker container stop webtest
-    docker container rm webtest
 
 ====================================================
-Part 3: Deploy example compose appliction with K8S and Swarm (Docker-machine)
+Part 4: Generate Load Test
 ====================================================
+1. Create load-generator deployment by command:
+	kubectl run -i --tty load-generator --image=busybox /bin/sh
 
-#### Docker for MAC ####
-1. Download compose file by command:
-    curl https://raw.githubusercontent.com/praparn/docker_meetup_201890111/master/compose_example.yml > compose_example.yml
+2. Test get webtest by command:
+    wget -q -O- http://webtest.default.svc.cluster.local:5000
 
-2. Deploy compose_example.yml on K8S by command:
-    docker stack deploy --compose-file compose_example.yml k8stack
+3. Initial Loop Test by command:
+    while true; sleep 0.01; do wget -q -O- http://webtest.default.svc.cluster.local:5000; done
+  
 
-3. Check service avaliable and pods by command
-    docker stack ls
-    docker stack services k8stack
-    docker stack ps k8stack
+====================================================
+Part 5: Monitor Load and Check HPA (Scale Up) (5 - 15 min)
+====================================================
+1. Monitor Load and HPA by command:
+	kubectl top nodes
+    kubectl top pods
+    kubectl get hpa
+    kubectl describe hpa/webtest
 
-    kubectl get pods            ==> Portion Command for K8S
-    kubectl get svc             ==> Portion Command for K8S
+    Dashboard: http://127.0.0.1:8443
 
-4. Open web browser and check result by url: http://127.0.0.1
+====================================================
+Part 6. Cut Load and Check HPA (Scale Down) (5 - 15 min)
+====================================================
+1. Cut load from load-generator by command: Ctrl+C and exit
 
-5. Clean up by command: 
-    docker stack rm k8stack
+2. Monitor Load and HPA by command:
+	kubectl top nodes
+    kubectl top pods
+    kubectl get hpa
+    kubectl describe hpa/webtest
+
+    Dashboard: http://127.0.0.1:8443
+
+
+====================================================
+Part 7. CleanUp Lab
+====================================================
+1. Delete hpa ,pods and load generator by command:
+    kubectl delete hpa/webtest
+    kubectl delete -f https://raw.githubusercontent.com/praparn/docker_meetup_20180329/master/webtest_deploy_hpa.yml
+    kubectl delete deployment/load-generator
+
+2. Delete metric server by command:
+    kubectl delete -f deploy/1.8+/
+
+3. Delete dashboard by command:
     kubectl delete -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
-
-#### Docker-Machine: Labdocker (Linux with Swarm) ####
-1. Initial Swarm and check swarm by command:
-    docker swarm init --advertise-addr 192.168.99.100:2377 --task-history-limit 2
-    docker node ls
-
-2. Download compose file by command:
-    curl https://raw.githubusercontent.com/praparn/docker_meetup_201890111/master/compose_example.yml > compose_example.yml
-
-3. Deploy compose_example.yml on K8S by command:
-    docker stack deploy --compose-file compose_example.yml swarmstack
-
-4. Check service avaliable and pods by command
-    docker stack ls
-    docker stack services swarmstack
-    docker stack ps swarmstack
-
-    docker service ls           ==> Portion Command for Swarm
-    docker service ps swarmstack_db         ==> Portion Command for K8S
-    docker service ps swarmstack_web        ==> Portion Command for K8S
-    docker service ps swarmstack_words      ==> Portion Command for K8S
-
-5. Open web browser and check result by url: http://192.168.99.100
-
-6. clean up by command: 
-    docker stack rm swarmstack
