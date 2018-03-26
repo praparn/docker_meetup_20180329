@@ -18,7 +18,7 @@ Part 1: Set environment for Docker for MAC
 5. Forward Port from MAC to specific pods:
     kubectl port-forward <pods name from no.4> 8443:8443 --namespace=kube-system ==> *This not recommend for product* (For Debug Only)
 
-6. Open web browser and check dashboard url: http://127.0.0.1:8443
+6. Open web browser and check dashboard url: https://127.0.0.1:8443
 
 7. Enable Metric Server:
 	git clone https://github.com/kubernetes-incubator/metrics-server.git
@@ -75,7 +75,7 @@ Part 5: Monitor Load and Check HPA (Scale Up) (5 - 15 min)
     kubectl get hpa
     kubectl describe hpa/webtest
 
-    Dashboard: http://127.0.0.1:8443
+    Dashboard: https://127.0.0.1:8443
 
 ====================================================
 Part 6. Cut Load and Check HPA (Scale Down) (5 - 15 min)
@@ -88,7 +88,7 @@ Part 6. Cut Load and Check HPA (Scale Down) (5 - 15 min)
     kubectl get hpa
     kubectl describe hpa/webtest
 
-    Dashboard: http://127.0.0.1:8443
+    Dashboard: https://127.0.0.1:8443
 
 
 ====================================================
